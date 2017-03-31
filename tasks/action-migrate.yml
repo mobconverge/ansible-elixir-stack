@@ -1,7 +1,11 @@
 ---
 
 - name: migrate database
-  command: bash -lc "mix ecto.migrate" chdir="{{ project_path }}"
-  remote_user: "{{ deployer }}"
+  shell: "mix ecto.migrate" 
+  args: 
+    chdir: "{{ project_path }}"
   environment:
     MIX_ENV: "{{ mix_env }}"
+  become: yes
+  become_user: "{{ deployer }}"
+  become_flags: "-i"

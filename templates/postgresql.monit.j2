@@ -1,0 +1,9 @@
+ check process postgres with pidfile /var/lib/postgresql/9.6/main/postmaster.pid
+   start program = "/etc/init.d/postgresql start"
+   stop  program = "/etc/init.d/postgresql stop"
+   {% for alert_email in app_alert_emails %}
+   alert {{ alert_email }}
+   {% endfor %}
+   if failed unixsocket /var/run/postgresql/.s.PGSQL.5432 protocol pgsql 
+      then restart
+   if failed port 5432 protocol pgsql then restart

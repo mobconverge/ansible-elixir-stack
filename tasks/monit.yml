@@ -1,6 +1,7 @@
 ---
 - name: install monit
   apt: name=monit update_cache=yes
+  become: yes
 
 
 - name: allow localhost access in monit config
@@ -9,6 +10,7 @@
     - "set httpd port 2812 and"
     - "use address localhost"
     - "allow localhost"
+  become: yes
 
 
 - when: enable_mail_alerts == True and smtp_use_tls == True
@@ -36,12 +38,21 @@
   template:
     src: app.monit.j2
     dest: "/etc/monit/conf.d/{{ app_name }}.monit"
-
+  become: yes
 
 - name: add monit config for nginx
   template:
     src: nginx.monit.j2
     dest: "/etc/monit/conf.d/nginx.monit"
+  become: yes
+
+- name: add monit config for postgresql
+  template:
+    src: postgresql.monit.j2
+    dest: "/etc/monit/conf.d/postgresql.monit"
+  become: yes
+
 
 - name: reload monit
-  service: name=monit state=reloaded
+  service: name=monit state=restarted
+  ignore_errors: True

@@ -1,5 +1,6 @@
 ---
 - name: stop app
+  become: yes
   monit: name="{{ app_name }}" state=stopped
   ignore_errors: True
 
@@ -28,3 +29,4 @@
 
 - name: reload monit
   service: name=monit state=reloaded
+  ignore_errors: True

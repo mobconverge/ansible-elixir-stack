@@ -15,3 +15,4 @@
 
 - name: start nginx using monit
   monit: name="nginx" state=started
+  become: true

@@ -5,3 +5,4 @@
 
 - name: "install pip"
   command: "python /tmp/get-pip.py"
+  become: yes

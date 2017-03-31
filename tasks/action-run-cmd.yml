@@ -1,10 +1,14 @@
 ---
 
 - name: run command
-  command: bash -lc "{{ cmd }}" chdir="{{ project_path }}"
-  remote_user: "{{ deployer }}"
+  shell: "{{ cmd }}" 
+  args:
+    chdir: "{{ project_path }}"
   environment:
     MIX_ENV: "{{ mix_env }}"
   register: cmd_output
+  become: yes
+  become_user: "{{ deployer }}"
+  become_flags: "-i"
 
 - debug: msg="{{ cmd_output.stdout_lines }}"

@@ -1,4 +1,14 @@
 ---
+- copy:
+    content: "{{ deploy_key }}"
+    dest: "/home/{{ deployer }}/.ssh/id_rsa" 
+    owner: "{{ deployer }}"
+    group: "{{ deployer }}"
+    mode: 0600
+  become: yes
+  become_user: "{{ deployer }}"
+
+
 - name: "clone project"
   git:
     repo: "{{ repo_url }}"
@@ -6,45 +16,59 @@
     dest: "{{ project_path }}"
     accept_hostkey: True
     force: True
-  remote_user: "{{ deployer }}"
+    ssh_opts: "-vvv"
+  become: yes
+  become_user: "{{ deployer }}"
+  become_flags: "-i"
 
 
 - name: "install tool versions"
-  command: bash -lc 'asdf install' chdir="{{ project_path }}"
-  async: 1800
-  remote_user: "{{ deployer }}"
+  shell: "asdf install"
+  args:
+    chdir: "{{ project_path }}"
+  become: yes
+  become_user: "{{ deployer }}"
+  become_flags: "-i"
 
 
 - name: "generate secret key base"
   command: "openssl rand -base64 {{ secret_key_base_length }}"
   register: openssl_random_string
+  become: no
 
 
 - name: set secret_key_base
   set_fact: secret_key_base="{{ openssl_random_string.stdout }}"
+  become: no
 
 
 - name: detect endpoint module
   command: grep -m 1 -o '[[:alnum:]]*.Endpoint' {{ project_path }}/config/dev.exs
   register: grep_endpoint_module
+  become: yes
+  become_user: "{{ deployer }}"
 
 
 - name: set app_endpoint_module fact
   set_fact: app_endpoint_module="{{ grep_endpoint_module.stdout }}"
+  become: no
 
 
 - name: detect repo module
   command: grep -m 1 -o '[[:alnum:]]*.Repo' {{ project_path }}/config/dev.exs
   register: grep_repo_module
+  become: yes
+  become_user: "{{ deployer }}"
 
 
 - name: set app_repo_module fact
   set_fact: app_repo_module="{{ grep_repo_module.stdout }}"
-
+  become: no
 
 - name: check if custom template for prod.secret.exs exists
   local_action: stat path="templates/prod.secret.exs.j2"
   register: custom_prod_secret_template
+  become: no
 
 
 - when: custom_prod_secret_template.stat.exists == False
@@ -52,7 +76,8 @@
   template:
     src: default-prod.secret.exs.j2
     dest: "{{ project_path }}/config/prod.secret.exs"
-  remote_user: "{{ deployer }}"
+  become: yes
+  become_user: "{{ deployer }}"
 
 
 - when: custom_prod_secret_template.stat.exists == True
@@ -60,12 +85,14 @@
   template:
     src: templates/prod.secret.exs.j2
     dest: "{{ project_path }}/config/prod.secret.exs"
-  remote_user: "{{ deployer }}"
+  become: yes
+  become_user: "{{ deployer }}"
 
 
 - name: check if conform config exists
   local_action: stat path="templates/{{ app_name }}.conf.j2"
   register: conform_config_template
+  become: no
 
 
 - when: conform_config_template.stat.exists == True
@@ -73,22 +100,35 @@
   template:
     src: "templates/{{ app_name }}.conf.j2"
     dest: "{{ project_path }}/config/{{ app_name }}.conf"
-  remote_user: "{{ deployer }}"
+  become: yes
+  become_user: "{{ deployer }}"
 
 
 - name: install hex
-  command: bash -lc "mix local.hex --force" chdir="{{ project_path }}"
-  remote_user: "{{ deployer }}"
+  shell: "mix local.hex --force"
+  args:
+    chdir: "{{ project_path }}"
+  become: yes
+  become_user: "{{ deployer }}"
+  become_flags: "-i"
 
 
 - name: install rebar
-  command: bash -lc "mix local.rebar --force" chdir="{{ project_path }}"
-  remote_user: "{{ deployer }}"
+  shell: "mix local.rebar --force"
+  args:
+    chdir: "{{ project_path }}"
+  become: yes
+  become_user: "{{ deployer }}"
+  become_flags: "-i"
 
 
 - name: "fetch mix dependencies"
-  command: bash -lc 'mix deps.get' chdir="{{ project_path }}"
-  async: 900
-  remote_user: "{{ deployer }}"
+  shell: "mix deps.get"
+  args:
+    chdir: "{{ project_path }}"
   environment:
     MIX_ENV: "{{ mix_env }}"
+  become: yes
+  become_user: "{{ deployer }}"
+  become_flags: "-i"
+

@@ -8,36 +8,39 @@
 
 - when: create_swap_file == True and swap_info.stat.exists == False
   include: create-swap-file.yml
-
+  become: yes
 
 - include: pip.yml
 - include: deployer-user.yml
 - include: asdf.yml
 
-
 - when: setup_postgres == True
   include: postgres-facts.yml
-
 
 - when: setup_postgres == True
   include: postgres.yml
 
-
+- include: libsass.yml
 - include: project.yml
-
 
 - when: build_frontend == True
   include: frontend.yml
-
 
 - include: nginx.yml
 - include: monit.yml
 - include: release.yml
 
+- name: stop processes using port 80
+  shell: fuser -k 80/tcp
+  become: yes
+  ignore_errors: True
 
-- name: start nginx using monit
-  monit: name="nginx" state=started
+- name: restart nginx using monit
+  monit: name="nginx" state=restarted
+  become: yes
+  ignore_errors: True
 
-
-- name: reload nginx config
-  service: name=nginx state=reloaded
+- name: enable nginx on reboot
+  service: name=nginx enabled=yes
+  become: yes
+  ignore_errors: True

@@ -1,9 +1,11 @@
 ---
 - name: "set npm jobs config"
-  command: bash -lc "npm config set jobs {{ npm_config_jobs }}"
-  remote_user: "{{ deployer }}"
+  shell: "npm config set jobs {{ npm_config_jobs }}"
   args:
     chdir: "{{ project_path }}/{{ frontend_dir }}"
+  become: yes
+  become_user: "{{ deployer }}"
+  become_flags: "-i"
 
 
 - when: npm_config_install_production == True
@@ -12,9 +14,12 @@
 
 
 - name: "fetch npm dependencies"
-  command: bash -lc "npm install {{npm_install_options}}" chdir="{{ project_path }}/{{ frontend_dir }}"
-  remote_user: "{{ deployer }}"
-  async: 1800
+  shell: "npm install {{npm_install_options}}"
+  args:
+    chdir: "{{ project_path }}/{{ frontend_dir }}"
+  become: yes
+  become_user: "{{ deployer }}"
+  become_flags: "-i"
 
 
 - name: check for bower.json
@@ -24,24 +29,31 @@
 
 - when: bower_json_file.stat.exists == True
   name: install bower dependencies
-  command: bash -lc "$(npm bin)/bower install"
-  remote_user: "{{ deployer }}"
+  shell: "$(npm bin)/bower install"
   args:
     chdir: "{{ project_path }}/{{ frontend_dir }}"
+  become: yes
+  become_user: "{{ deployer }}"
+  become_flags: "-i"
 
 
 - name: "build frontend assets"
-  command: bash -lc "{{ frontend_build_command }}"
-  remote_user: "{{ deployer }}"
+  shell: "{{ frontend_build_command }}"
   args:
     chdir: "{{ project_path }}/{{ frontend_dir }}"
+  become: yes
+  become_user: "{{ deployer }}"
+  become_flags: "-i"
 
 
 - when: "post_frontend_build != False"
   name: "post-frontend-build command"
-  command: 'bash -lc "{{ post_frontend_build }}"'
-  remote_user: "{{ deployer }}"
+  shell: "{{ post_frontend_build }}"
   args:
     chdir: "{{ project_path }}"
   environment:
     MIX_ENV: "{{ mix_env }}"
+  become: yes
+  become_user: "{{ deployer }}"
+  become_flags: "-i"
+
